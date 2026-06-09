@@ -42,7 +42,7 @@ class MainActivity : FlutterActivity() {
                         val size = call.argument<Int>("overlaySize") ?: 64
                         getSharedPreferences(VpnBlockService.PREFS, MODE_PRIVATE).edit()
                             .putInt(VpnBlockService.KEY_DURATION_MS, duration.coerceIn(1, 5000))
-                            .putInt(VpnBlockService.KEY_SIZE, size.coerceIn(44, 120))
+                            .putInt(VpnBlockService.KEY_SIZE, size.coerceIn(40, 120))
                             .apply()
                         startService(Intent(this, VpnBlockService::class.java).apply {
                             action = VpnBlockService.ACTION_REFRESH
