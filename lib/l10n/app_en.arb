@@ -1,0 +1,46 @@
+{
+  "@@locale": "en",
+  "appTitle": "Hearthstone DC Helper",
+  "statusBlocking": "Reconnecting",
+  "statusReady": "Floating button is ready",
+  "statusStopped": "Service not running",
+  "descriptionEnabled": "Service is on. Tap the floating button to drop the line.",
+  "descriptionDisabled": "Tap the button to start. Grant the permissions listed below; the first launch will request VPN authorization.",
+  "startService": "Start service",
+  "stopService": "Stop service",
+  "permissionsSection": "Permissions",
+  "permissionOverlayTitle": "Floating window",
+  "permissionGranted": "Granted",
+  "permissionOverlayHint": "Required to display the disconnect button",
+  "permissionBatteryTitle": "Ignore battery optimization",
+  "permissionBatteryHint": "Reduces the chance of the background service being killed",
+  "settingsSection": "Settings",
+  "disconnectDuration": "Disconnect duration",
+  "durationValue": "{ms} ms",
+  "@durationValue": {
+    "placeholders": {
+      "ms": { "type": "int" }
+    }
+  },
+  "manualInput": "Manual input",
+  "millisSuffix": "ms",
+  "overlaySize": "Floating button size",
+  "overlaySizeValue": "{dp} dp",
+  "@overlaySizeValue": {
+    "placeholders": {
+      "dp": { "type": "int" }
+    }
+  },
+  "errorNeedVpnPermission": "Please allow the Android VPN connection request first",
+  "errorMinDuration": "Duration must be at least 1 ms",
+  "languageMenuTooltip": "Language",
+  "languageSystem": "Follow system",
+  "languageChinese": "中文",
+  "languageEnglish": "English",
+  "notif_title_idle": "DC Helper is running",
+  "notif_title_blocking": "Suspending network sessions",
+  "notif_text_idle": "Tap the floating button to trigger a disconnect.",
+  "notif_text_blocking": "Existing connections are closed; new connections resume when the timer ends.",
+  "notif_action_stop": "Stop",
+  "notif_channel_name": "VPN disconnect service"
+}

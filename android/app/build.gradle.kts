@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -41,6 +43,9 @@ android {
         }
     }
 
+    sourceSets.named("main") {
+        res.srcDir(layout.buildDirectory.dir("generated/l10n-res"))
+    }
 }
 
 flutter {
@@ -60,6 +65,71 @@ val buildHevNative by tasks.registering(Exec::class) {
     )
 }
 
+// ARB → Android strings.xml. Single source of truth = lib/l10n/app_*.arb.
+// Whitelist: `appTitle` becomes <string name="app_name">; everything starting
+// with `notif_` is exported under the same name. Add new entries here if more
+// Flutter strings need to surface as native resources.
+val generateL10nResources by tasks.registering {
+    val arbDir = rootProject.projectDir.parentFile.resolve("lib/l10n")
+    val arbFiles = fileTree(arbDir) {
+        include("app_*.arb")
+    }
+    val outDir = layout.buildDirectory.dir("generated/l10n-res")
+    inputs.files(arbFiles).withPropertyName("arbFiles").skipWhenEmpty()
+    outputs.dir(outDir)
+
+    val keyMap = mapOf("appTitle" to "app_name")
+    val exportPrefix = "notif_"
+
+    doLast {
+        val root = outDir.get().asFile
+        root.deleteRecursively()
+        root.mkdirs()
+        for (arb in arbFiles) {
+            val tag = arb.name.removePrefix("app_").removeSuffix(".arb")
+            val resDir = when {
+                tag == "en" -> File(root, "values")
+                tag.contains("_") -> {
+                    val (lang, region) = tag.split("_", limit = 2)
+                    File(root, "values-$lang-r$region")
+                }
+                else -> File(root, "values-$tag")
+            }
+            resDir.mkdirs()
+            @Suppress("UNCHECKED_CAST")
+            val data = JsonSlurper().parse(arb) as Map<String, Any?>
+            val body = StringBuilder()
+            for ((key, value) in data) {
+                if (key.startsWith("@")) continue
+                if (value !is String) continue
+                val androidName = keyMap[key]
+                    ?: if (key.startsWith(exportPrefix)) key else continue
+                body.append("    <string name=\"")
+                    .append(androidName)
+                    .append("\">")
+                    .append(escapeAndroidXmlString(value))
+                    .append("</string>\n")
+            }
+            File(resDir, "strings.xml").writeText(
+                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n$body</resources>\n",
+                Charsets.UTF_8
+            )
+        }
+    }
+}
+
+fun escapeAndroidXmlString(s: String): String = buildString(s.length) {
+    for (c in s) when (c) {
+        '&' -> append("&amp;")
+        '<' -> append("&lt;")
+        '>' -> append("&gt;")
+        '\'' -> append("\\'")
+        '"' -> append("\\\"")
+        '\n' -> append("\\n")
+        else -> append(c)
+    }
+}
+
 tasks.named("preBuild").configure {
-    dependsOn(buildHevNative)
+    dependsOn(buildHevNative, generateL10nResources)
 }

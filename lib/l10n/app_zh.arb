@@ -1,0 +1,46 @@
+{
+  "@@locale": "zh",
+  "appTitle": "炉石拔线助手",
+  "statusBlocking": "正在连接",
+  "statusReady": "悬浮拔线按钮已就绪",
+  "statusStopped": "服务未启动",
+  "descriptionEnabled": "已开启功能，点击悬浮按钮一键拔线",
+  "descriptionDisabled": "点击按钮开启功能，请确保授予下方列出的权限，首次启动需请求 VPN 连接授权",
+  "startService": "启动服务",
+  "stopService": "停止服务",
+  "permissionsSection": "权限",
+  "permissionOverlayTitle": "悬浮窗",
+  "permissionGranted": "已允许",
+  "permissionOverlayHint": "需要允许，才能显示拔线按钮",
+  "permissionBatteryTitle": "忽略电池优化",
+  "permissionBatteryHint": "可减少后台服务被系统停止的概率",
+  "settingsSection": "设置",
+  "disconnectDuration": "拔线时长",
+  "durationValue": "{ms} 毫秒",
+  "@durationValue": {
+    "placeholders": {
+      "ms": { "type": "int" }
+    }
+  },
+  "manualInput": "手动输入",
+  "millisSuffix": "毫秒",
+  "overlaySize": "悬浮按钮大小",
+  "overlaySizeValue": "{dp} dp",
+  "@overlaySizeValue": {
+    "placeholders": {
+      "dp": { "type": "int" }
+    }
+  },
+  "errorNeedVpnPermission": "请先允许 Android VPN 连接请求",
+  "errorMinDuration": "至少断网 1 毫秒",
+  "languageMenuTooltip": "语言",
+  "languageSystem": "跟随系统",
+  "languageChinese": "中文",
+  "languageEnglish": "English",
+  "notif_title_idle": "拔线助手运行中",
+  "notif_title_blocking": "正在关闭并挂起网络会话",
+  "notif_text_idle": "点击悬浮按钮可触发游戏断线重连",
+  "notif_text_blocking": "现有连接已关闭，新连接将在计时结束后放行",
+  "notif_action_stop": "停止",
+  "notif_channel_name": "VPN 断流服务"
+}

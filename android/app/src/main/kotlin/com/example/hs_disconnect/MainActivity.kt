@@ -26,6 +26,17 @@ class MainActivity : FlutterActivity() {
                         })
                         result.success(true)
                     }
+                    "setLocale" -> {
+                        val tag = call.argument<String>("tag") ?: ""
+                        val prefs = getSharedPreferences(VpnBlockService.PREFS, MODE_PRIVATE)
+                        prefs.edit().putString(VpnBlockService.KEY_LANG_TAG, tag).apply()
+                        if (prefs.getBoolean(VpnBlockService.KEY_RUNNING, false)) {
+                            startService(Intent(this, VpnBlockService::class.java).apply {
+                                action = VpnBlockService.ACTION_REFRESH
+                            })
+                        }
+                        result.success(true)
+                    }
                     "updateSettings" -> {
                         val duration = call.argument<Int>("durationMs") ?: 3000
                         val size = call.argument<Int>("overlaySize") ?: 64

@@ -2,26 +2,105 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() => runApp(const DisconnectApp());
+const List<Locale> kSupportedLocales = <Locale>[
+  Locale('zh', 'CN'),
+  Locale('en', 'US'),
+];
+
+const String _kLocalePrefKey = 'app_locale';
+const MethodChannel _kNativeChannel = MethodChannel(
+  'com.example.hs_disconnect/control',
+);
+
+class LocaleNotifier extends ValueNotifier<Locale?> {
+  LocaleNotifier._() : super(null);
+
+  static final LocaleNotifier instance = LocaleNotifier._();
+
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    value = _parse(prefs.getString(_kLocalePrefKey));
+    await _pushToNative(value);
+  }
+
+  Future<void> set(Locale? locale) async {
+    value = locale;
+    final prefs = await SharedPreferences.getInstance();
+    if (locale == null) {
+      await prefs.remove(_kLocalePrefKey);
+    } else {
+      await prefs.setString(_kLocalePrefKey, _stringify(locale));
+    }
+    await _pushToNative(locale);
+  }
+
+  Future<void> _pushToNative(Locale? locale) async {
+    final tag = locale == null ? '' : _stringify(locale);
+    try {
+      await _kNativeChannel.invokeMethod<bool>('setLocale', {'tag': tag});
+    } catch (_) {}
+  }
+
+  static String _stringify(Locale locale) {
+    final country = locale.countryCode;
+    if (country == null || country.isEmpty) return locale.languageCode;
+    return '${locale.languageCode}_$country';
+  }
+
+  static Locale? _parse(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final parts = raw.split('_');
+    if (parts.isEmpty) return null;
+    return Locale(parts[0], parts.length > 1 ? parts[1] : null);
+  }
+}
+
+Locale _resolveLocale(List<Locale>? preferred, Iterable<Locale> supported) {
+  if (preferred != null) {
+    for (final want in preferred) {
+      for (final s in supported) {
+        if (s.languageCode == want.languageCode) return s;
+      }
+    }
+  }
+  return const Locale('en', 'US');
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await LocaleNotifier.instance.load();
+  runApp(const DisconnectApp());
+}
 
 class DisconnectApp extends StatelessWidget {
   const DisconnectApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: '炉石拔线助手',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xff315f78),
-          brightness: Brightness.dark,
-        ),
-        scaffoldBackgroundColor: const Color(0xff0c141b),
-        useMaterial3: true,
-      ),
-      home: const ControlPage(),
+    return ValueListenableBuilder<Locale?>(
+      valueListenable: LocaleNotifier.instance,
+      builder: (context, locale, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          onGenerateTitle: (ctx) => AppLocalizations.of(ctx).appTitle,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: kSupportedLocales,
+          localeListResolutionCallback: _resolveLocale,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xff315f78),
+              brightness: Brightness.dark,
+            ),
+            scaffoldBackgroundColor: const Color(0xff0c141b),
+            useMaterial3: true,
+          ),
+          home: const ControlPage(),
+        );
+      },
     );
   }
 }
@@ -86,9 +165,11 @@ class _ControlPageState extends State<ControlPage> {
   Future<void> _toggleService() async {
     final ok = await _channel.invokeMethod<bool>(_running ? 'stop' : 'start');
     if (ok == false && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请先允许 Android VPN 连接请求')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).errorNeedVpnPermission),
+        ),
+      );
     }
     await _refresh();
   }
@@ -106,9 +187,11 @@ class _ControlPageState extends State<ControlPage> {
     if (value == null || value < 1) {
       _durationController.text = _durationMs.toString();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('至少断网 1 毫秒')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).errorMinDuration),
+          ),
+        );
       }
       return;
     }
@@ -124,6 +207,7 @@ class _ControlPageState extends State<ControlPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final statusColor = _blocking
         ? const Color(0xffff626d)
         : _running
@@ -131,8 +215,9 @@ class _ControlPageState extends State<ControlPage> {
         : Colors.white54;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('炉石拔线助手'),
+        title: Text(l10n.appTitle),
         backgroundColor: Colors.transparent,
+        actions: const [_LanguageMenuButton()],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -155,14 +240,14 @@ class _ControlPageState extends State<ControlPage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _blocking ? '正在连接' : (_running ? '悬浮重连按钮已就绪' : '服务未启动'),
+                  _blocking
+                      ? l10n.statusBlocking
+                      : (_running ? l10n.statusReady : l10n.statusStopped),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _running
-                      ? '已开启功能，点击悬浮按钮一键拔线'
-                      : '点击按钮开启功能，请确保授予下方列出的权限，首次启动需请求 VPN 连接授权',
+                  _running ? l10n.descriptionEnabled : l10n.descriptionDisabled,
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white60),
                 ),
@@ -174,7 +259,7 @@ class _ControlPageState extends State<ControlPage> {
                         ? Icons.stop_circle_outlined
                         : Icons.play_circle_outline,
                   ),
-                  label: Text(_running ? '停止服务' : '启动服务'),
+                  label: Text(_running ? l10n.stopService : l10n.startService),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     backgroundColor: _running ? const Color(0xff883f48) : null,
@@ -184,26 +269,36 @@ class _ControlPageState extends State<ControlPage> {
             ),
           ),
           const SizedBox(height: 26),
-          Text('权限', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            l10n.permissionsSection,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           _PermissionTile(
-            title: '悬浮窗',
-            subtitle: _overlayGranted ? '已允许' : '需要允许，才能显示拔线按钮',
+            title: l10n.permissionOverlayTitle,
+            subtitle: _overlayGranted
+                ? l10n.permissionGranted
+                : l10n.permissionOverlayHint,
             granted: _overlayGranted,
             onTap: () => _request('requestOverlay'),
           ),
           _PermissionTile(
-            title: '忽略电池优化',
-            subtitle: _batteryIgnored ? '已允许' : '可减少后台服务被系统停止的概率',
+            title: l10n.permissionBatteryTitle,
+            subtitle: _batteryIgnored
+                ? l10n.permissionGranted
+                : l10n.permissionBatteryHint,
             granted: _batteryIgnored,
             onTap: () => _request('requestBatteryOptimization'),
           ),
           const SizedBox(height: 24),
-          Text('设置', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            l10n.settingsSection,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           _SettingCard(
-            title: '拔线时长',
-            value: '$_durationMs 毫秒',
+            title: l10n.disconnectDuration,
+            value: l10n.durationValue(_durationMs),
             child: Column(
               children: [
                 Slider(
@@ -227,9 +322,9 @@ class _ControlPageState extends State<ControlPage> {
                   focusNode: _durationFocus,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: '手动输入',
-                    suffixText: '毫秒',
+                  decoration: InputDecoration(
+                    labelText: l10n.manualInput,
+                    suffixText: l10n.millisSuffix,
                   ),
                   onSubmitted: (_) => _saveTypedDuration(),
                   onTapOutside: (_) {
@@ -241,8 +336,8 @@ class _ControlPageState extends State<ControlPage> {
             ),
           ),
           _SettingCard(
-            title: '悬浮按钮大小',
-            value: '${_size.round()} dp',
+            title: l10n.overlaySize,
+            value: l10n.overlaySizeValue(_size.round()),
             child: Slider(
               min: 40,
               max: 120,
@@ -256,6 +351,68 @@ class _ControlPageState extends State<ControlPage> {
               },
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LanguageOption {
+  const _LanguageOption(this.locale);
+  final Locale? locale;
+}
+
+class _LanguageMenuButton extends StatelessWidget {
+  const _LanguageMenuButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return ValueListenableBuilder<Locale?>(
+      valueListenable: LocaleNotifier.instance,
+      builder: (context, current, _) {
+        return PopupMenuButton<_LanguageOption>(
+          icon: const Icon(Icons.language),
+          tooltip: l10n.languageMenuTooltip,
+          onSelected: (opt) => LocaleNotifier.instance.set(opt.locale),
+          itemBuilder: (context) => [
+            _buildItem(const _LanguageOption(null), l10n.languageSystem, current),
+            _buildItem(
+              const _LanguageOption(Locale('zh', 'CN')),
+              l10n.languageChinese,
+              current,
+            ),
+            _buildItem(
+              const _LanguageOption(Locale('en', 'US')),
+              l10n.languageEnglish,
+              current,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  PopupMenuItem<_LanguageOption> _buildItem(
+    _LanguageOption opt,
+    String label,
+    Locale? current,
+  ) {
+    final selected = opt.locale == null
+        ? current == null
+        : current?.languageCode == opt.locale!.languageCode &&
+              current?.countryCode == opt.locale!.countryCode;
+    return PopupMenuItem<_LanguageOption>(
+      value: opt,
+      child: Row(
+        children: [
+          Icon(
+            Icons.check,
+            size: 18,
+            color: selected ? null : Colors.transparent,
+          ),
+          const SizedBox(width: 12),
+          Text(label),
         ],
       ),
     );
