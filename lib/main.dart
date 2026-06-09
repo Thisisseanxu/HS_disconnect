@@ -232,9 +232,7 @@ class _ControlPageState extends State<ControlPage> {
             child: Column(
               children: [
                 Icon(
-                  _blocking
-                      ? Icons.signal_wifi_connected_no_internet_4
-                      : Icons.shield_outlined,
+                  Icons.link_off,
                   size: 64,
                   color: statusColor,
                 ),
