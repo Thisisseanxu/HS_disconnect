@@ -28,6 +28,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
     }
 
     buildTypes {
@@ -37,8 +40,26 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
 }
 
 flutter {
     source = "../.."
+}
+
+val buildHevNative by tasks.registering(Exec::class) {
+    val ndkBuild = File(android.ndkDirectory, if (System.getProperty("os.name").startsWith("Windows")) "ndk-build.cmd" else "ndk-build")
+    workingDir(rootProject.projectDir)
+    commandLine(
+        ndkBuild.absolutePath,
+        "NDK_PROJECT_PATH=app",
+        "APP_BUILD_SCRIPT=app/src/main/jni/Android.mk",
+        "NDK_APPLICATION_MK=app/src/main/jni/Application.mk",
+        "NDK_LIBS_OUT=app/src/main/jniLibs",
+        "NDK_OUT=../build/native-obj",
+    )
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(buildHevNative)
 }
