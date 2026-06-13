@@ -1,10 +1,15 @@
 package com.thisisseanxu.hs_disconnect
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.VpnService
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -12,6 +17,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val channelName = "com.thisisseanxu.hs_disconnect/control"
     private val vpnRequestCode = 7001
+    private val notificationRequestCode = 7002
     private var pendingResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -58,9 +64,14 @@ class MainActivity : FlutterActivity() {
                                 "durationMs" to prefs.getInt(VpnBlockService.KEY_DURATION_MS, 3000),
                                 "overlaySize" to prefs.getInt(VpnBlockService.KEY_SIZE, 64),
                                 "overlayGranted" to Settings.canDrawOverlays(this),
-                                "batteryOptimizationIgnored" to isIgnoringBatteryOptimizations()
+                                "batteryOptimizationIgnored" to isIgnoringBatteryOptimizations(),
+                                "notificationsGranted" to notificationsEnabled()
                             )
                         )
+                    }
+                    "requestNotifications" -> {
+                        requestNotifications()
+                        result.success(true)
                     }
                     "requestOverlay" -> {
                         if (!Settings.canDrawOverlays(this)) {
@@ -114,6 +125,54 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun requestNotifications() {
+        if (notificationsEnabled()) return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = Manifest.permission.POST_NOTIFICATIONS
+            val permissionDenied =
+                ContextCompat.checkSelfPermission(this, permission) !=
+                    PackageManager.PERMISSION_GRANTED
+            val preferences = getPreferences(MODE_PRIVATE)
+            val previouslyRequested =
+                preferences.getBoolean(KEY_NOTIFICATION_PERMISSION_REQUESTED, false)
+            val canRequestAgain =
+                !previouslyRequested ||
+                    ActivityCompat.shouldShowRequestPermissionRationale(this, permission)
+
+            if (permissionDenied && canRequestAgain) {
+                preferences.edit()
+                    .putBoolean(KEY_NOTIFICATION_PERMISSION_REQUESTED, true)
+                    .apply()
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(permission),
+                    notificationRequestCode
+                )
+                return
+            }
+        }
+
+        openNotificationSettings()
+    }
+
+    private fun notificationsEnabled(): Boolean =
+        NotificationManagerCompat.from(this).areNotificationsEnabled()
+
+    private fun openNotificationSettings() {
+        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+        }
+        runCatching { startActivity(intent) }.onFailure {
+            startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:$packageName")
+                )
+            )
+        }
+    }
+
     private fun startBlockService() {
         val intent = Intent(this, VpnBlockService::class.java).apply {
             action = VpnBlockService.ACTION_START
@@ -145,5 +204,10 @@ class MainActivity : FlutterActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
         val manager = getSystemService(POWER_SERVICE) as android.os.PowerManager
         return manager.isIgnoringBatteryOptimizations(packageName)
+    }
+
+    companion object {
+        private const val KEY_NOTIFICATION_PERMISSION_REQUESTED =
+            "notification_permission_requested"
     }
 }
