@@ -1,0 +1,121 @@
+name: Auto Bump Version
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+concurrency:
+  group: bump-version-main
+  cancel-in-progress: false
+
+jobs:
+  bump-version:
+    if: ${{ github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.VERSION_BOT_APP_ID }}
+          private-key: ${{ secrets.VERSION_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          ref: main
+          fetch-depth: 0
+
+      - name: Calculate next version
+        id: version
+        shell: bash
+        env:
+          PR_TEXT: ${{ format('{0}{1}{2}', github.event.pull_request.title, '\n', github.event.pull_request.body) }}
+          TZ: Asia/Shanghai
+        run: |
+          set -euo pipefail
+
+          current_version="$(sed -nE 's/^version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+)(\+[0-9]+)?[[:space:]]*$/\1/p' pubspec.yaml)"
+          if [[ -z "$current_version" ]]; then
+            echo "Could not read the current version from pubspec.yaml" >&2
+            exit 1
+          fi
+
+          IFS='.' read -r major minor patch <<< "$current_version"
+
+          if [[ "$PR_TEXT" == *"#major"* ]]; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+            bump="major"
+          elif [[ "$PR_TEXT" == *"#minor"* ]]; then
+            minor=$((minor + 1))
+            patch=0
+            bump="minor"
+          else
+            patch=$((patch + 1))
+            bump="patch"
+          fi
+
+          build_date="$(date +%Y%m%d)"
+          next_version="${major}.${minor}.${patch}+${build_date}"
+          tag="v${next_version}"
+
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
+          echo "version=$next_version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Update pubspec.yaml
+        shell: bash
+        env:
+          NEXT_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("pubspec.yaml")
+          content = path.read_text(encoding="utf-8")
+          updated, count = re.subn(
+              r"^version:\s*\d+\.\d+\.\d+(?:\+\d+)?\s*$",
+              f"version: {os.environ['NEXT_VERSION']}",
+              content,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          if count != 1:
+              raise SystemExit("Could not update version in pubspec.yaml")
+          path.write_text(updated, encoding="utf-8")
+          PY
+
+      - name: Commit version and create tag
+        shell: bash
+        env:
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          NEXT_VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists" >&2
+            exit 1
+          fi
+
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${APP_SLUG}[bot]@users.noreply.github.com"
+
+          git add pubspec.yaml
+          git commit -m "chore: bump version to ${NEXT_VERSION} [skip version bump]"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin HEAD:main
+          git push origin "$TAG"
