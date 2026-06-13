@@ -12,7 +12,7 @@ const List<Locale> kSupportedLocales = <Locale>[
 
 const String _kLocalePrefKey = 'app_locale';
 const MethodChannel _kNativeChannel = MethodChannel(
-  'com.example.hs_disconnect/control',
+  'com.thisisseanxu.hs_disconnect/control',
 );
 
 class LocaleNotifier extends ValueNotifier<Locale?> {
@@ -113,7 +113,9 @@ class ControlPage extends StatefulWidget {
 }
 
 class _ControlPageState extends State<ControlPage> {
-  static const _channel = MethodChannel('com.example.hs_disconnect/control');
+  static const _channel = MethodChannel(
+    'com.thisisseanxu.hs_disconnect/control',
+  );
   Timer? _timer;
   bool _running = false;
   bool _blocking = false;
@@ -231,11 +233,7 @@ class _ControlPageState extends State<ControlPage> {
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.link_off,
-                  size: 64,
-                  color: statusColor,
-                ),
+                Icon(Icons.link_off, size: 64, color: statusColor),
                 const SizedBox(height: 12),
                 Text(
                   _blocking
@@ -374,7 +372,11 @@ class _LanguageMenuButton extends StatelessWidget {
           tooltip: l10n.languageMenuTooltip,
           onSelected: (opt) => LocaleNotifier.instance.set(opt.locale),
           itemBuilder: (context) => [
-            _buildItem(const _LanguageOption(null), l10n.languageSystem, current),
+            _buildItem(
+              const _LanguageOption(null),
+              l10n.languageSystem,
+              current,
+            ),
             _buildItem(
               const _LanguageOption(Locale('zh', 'CN')),
               l10n.languageChinese,

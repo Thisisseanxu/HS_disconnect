@@ -1,4 +1,4 @@
-package com.example.hs_disconnect
+package com.thisisseanxu.hs_disconnect
 
 import android.content.Intent
 import android.net.VpnService
@@ -10,7 +10,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val channelName = "com.example.hs_disconnect/control"
+    private val channelName = "com.thisisseanxu.hs_disconnect/control"
     private val vpnRequestCode = 7001
     private var pendingResult: MethodChannel.Result? = null
 

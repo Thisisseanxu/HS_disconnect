@@ -1,4 +1,4 @@
-package com.example.hs_disconnect
+package com.thisisseanxu.hs_disconnect
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

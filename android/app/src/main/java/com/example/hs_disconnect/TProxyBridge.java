@@ -1,4 +1,4 @@
-package com.example.hs_disconnect;
+package com.thisisseanxu.hs_disconnect;
 
 public final class TProxyBridge {
     private static native void TProxyStartService(String configPath, int fd);

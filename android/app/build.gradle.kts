@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.hs_disconnect"
+    namespace = "com.thisisseanxu.hs_disconnect"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.3.13750724"
 
@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.hs_disconnect"
+        applicationId = "com.thisisseanxu.hs_disconnect"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

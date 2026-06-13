@@ -4,7 +4,7 @@ import 'package:hs_disconnect/main.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const channel = MethodChannel('com.example.hs_disconnect/control');
+  const channel = MethodChannel('com.thisisseanxu.hs_disconnect/control');
 
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
