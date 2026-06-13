@@ -128,20 +128,29 @@ class MainActivity : FlutterActivity() {
     private fun requestNotifications() {
         if (notificationsEnabled()) return
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED &&
-            !getPreferences(MODE_PRIVATE).getBoolean(KEY_NOTIFICATION_PERMISSION_REQUESTED, false)
-        ) {
-            getPreferences(MODE_PRIVATE).edit()
-                .putBoolean(KEY_NOTIFICATION_PERMISSION_REQUESTED, true)
-                .apply()
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                notificationRequestCode
-            )
-            return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = Manifest.permission.POST_NOTIFICATIONS
+            val permissionDenied =
+                ContextCompat.checkSelfPermission(this, permission) !=
+                    PackageManager.PERMISSION_GRANTED
+            val preferences = getPreferences(MODE_PRIVATE)
+            val previouslyRequested =
+                preferences.getBoolean(KEY_NOTIFICATION_PERMISSION_REQUESTED, false)
+            val canRequestAgain =
+                !previouslyRequested ||
+                    ActivityCompat.shouldShowRequestPermissionRationale(this, permission)
+
+            if (permissionDenied && canRequestAgain) {
+                preferences.edit()
+                    .putBoolean(KEY_NOTIFICATION_PERMISSION_REQUESTED, true)
+                    .apply()
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(permission),
+                    notificationRequestCode
+                )
+                return
+            }
         }
 
         openNotificationSettings()
