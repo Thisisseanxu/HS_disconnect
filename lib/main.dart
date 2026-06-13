@@ -121,6 +121,7 @@ class _ControlPageState extends State<ControlPage> {
   bool _blocking = false;
   bool _overlayGranted = false;
   bool _batteryIgnored = false;
+  bool _notificationsGranted = false;
   int _durationMs = 3000;
   double _size = 64;
   final _durationController = TextEditingController(text: '3000');
@@ -149,6 +150,7 @@ class _ControlPageState extends State<ControlPage> {
       _blocking = state['blocking'] as bool? ?? false;
       _overlayGranted = state['overlayGranted'] as bool? ?? false;
       _batteryIgnored = state['batteryOptimizationIgnored'] as bool? ?? false;
+      _notificationsGranted = state['notificationsGranted'] as bool? ?? false;
       if (!_draggingDuration) {
         _durationMs = state['durationMs'] as int? ?? 3000;
         if (!_durationFocus.hasFocus) {
@@ -270,6 +272,15 @@ class _ControlPageState extends State<ControlPage> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
+          _PermissionTile(
+            title: l10n.permissionNotificationTitle,
+            subtitle: _notificationsGranted
+                ? l10n.permissionGranted
+                : l10n.permissionNotificationHint,
+            granted: _notificationsGranted,
+            optional: true,
+            onTap: () => _request('requestNotifications'),
+          ),
           _PermissionTile(
             title: l10n.permissionOverlayTitle,
             subtitle: _overlayGranted
@@ -425,12 +436,14 @@ class _PermissionTile extends StatelessWidget {
     required this.subtitle,
     required this.granted,
     required this.onTap,
+    this.optional = false,
   });
 
   final String title;
   final String subtitle;
   final bool granted;
   final VoidCallback onTap;
+  final bool optional;
 
   @override
   Widget build(BuildContext context) {
@@ -439,7 +452,11 @@ class _PermissionTile extends StatelessWidget {
         title: Text(title),
         subtitle: Text(subtitle),
         leading: Icon(
-          granted ? Icons.check_circle : Icons.warning_amber_rounded,
+          granted
+              ? Icons.check_circle
+              : optional
+              ? Icons.info_outline
+              : Icons.warning_amber_rounded,
         ),
         trailing: granted ? null : const Icon(Icons.chevron_right),
         onTap: granted ? null : onTap,
