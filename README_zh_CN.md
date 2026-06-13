@@ -51,10 +51,10 @@
 | 层          | 组件                                                                                                                                                                | 作用                                                                                                                                                |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | UI          | [`lib/main.dart`](lib/main.dart)                                                                                                                                    | Flutter 控制面板：状态、权限、断网时长与悬浮按钮大小的滑条                                                                                          |
-| 桥接        | [`MainActivity.kt`](android/app/src/main/kotlin/com/example/hs_disconnect/MainActivity.kt)                                                                          | Flutter 与原生侧的 `MethodChannel`（`start` / `stop` / `updateSettings` / `getState` / `requestOverlay` / `requestBatteryOptimization`）            |
-| VPN 核心    | [`VpnBlockService.kt`](android/app/src/main/kotlin/com/example/hs_disconnect/VpnBlockService.kt)                                                                    | 继承 `android.net.VpnService`，负责建立 TUN、维护前台通知与可拖动的悬浮按钮                                                                         |
-| SOCKS 代理  | [`LocalSocks5Proxy.kt`](android/app/src/main/kotlin/com/example/hs_disconnect/LocalSocks5Proxy.kt)                                                                  | 纯 Kotlin 实现的 SOCKS5 服务器（支持 CONNECT 与 UDP ASSOCIATE），监听 `127.0.0.1:10808`，跟踪每一个活跃的 `Socket` / `DatagramSocket`，便于随时关闭 |
-| TUN ⇄ SOCKS | [`TProxyBridge.java`](android/app/src/main/java/com/example/hs_disconnect/TProxyBridge.java) + [`libhev-socks5-tunnel`](android/app/src/main/jni/hev-socks5-tunnel) | 基于 lwIP 的原生库，从 TUN 文件描述符读取 IP 数据包并以 SOCKS5 流的形式重新发出                                                                     |
+| 桥接        | [`MainActivity.kt`](android/app/src/main/kotlin/com/thisisseanxu/hs_disconnect/MainActivity.kt)                                                                          | Flutter 与原生侧的 `MethodChannel`（`start` / `stop` / `updateSettings` / `getState` / `requestOverlay` / `requestBatteryOptimization`）            |
+| VPN 核心    | [`VpnBlockService.kt`](android/app/src/main/kotlin/com/thisisseanxu/hs_disconnect/VpnBlockService.kt)                                                                    | 继承 `android.net.VpnService`，负责建立 TUN、维护前台通知与可拖动的悬浮按钮                                                                         |
+| SOCKS 代理  | [`LocalSocks5Proxy.kt`](android/app/src/main/kotlin/com/thisisseanxu/hs_disconnect/LocalSocks5Proxy.kt)                                                                  | 纯 Kotlin 实现的 SOCKS5 服务器（支持 CONNECT 与 UDP ASSOCIATE），监听 `127.0.0.1:10808`，跟踪每一个活跃的 `Socket` / `DatagramSocket`，便于随时关闭 |
+| TUN ⇄ SOCKS | [`TProxyBridge.java`](android/app/src/main/java/com/thisisseanxu/hs_disconnect/TProxyBridge.java) + [`libhev-socks5-tunnel`](android/app/src/main/jni/hev-socks5-tunnel) | 基于 lwIP 的原生库，从 TUN 文件描述符读取 IP 数据包并以 SOCKS5 流的形式重新发出                                                                     |
 
 ### "拔线" 的完整流程
 
@@ -96,11 +96,11 @@ hs_disconnect/
    ├─ build.gradle.kts                            在 preBuild 阶段触发 ndk-build
    └─ src/main/
       ├─ AndroidManifest.xml                      VPN + 悬浮窗 + 前台服务权限
-      ├─ kotlin/com/example/hs_disconnect/
+      ├─ kotlin/com/thisisseanxu/hs_disconnect/
       │  ├─ MainActivity.kt                       MethodChannel 宿主
       │  ├─ VpnBlockService.kt                    VpnService + 悬浮窗
       │  └─ LocalSocks5Proxy.kt                   SOCKS5 服务器
-      ├─ java/com/example/hs_disconnect/
+      ├─ java/com/thisisseanxu/hs_disconnect/
       │  └─ TProxyBridge.java                     JNI 绑定
       ├─ jni/hev-socks5-tunnel/
       └─ jniLibs/<abi>/libhev-socks5-tunnel.so

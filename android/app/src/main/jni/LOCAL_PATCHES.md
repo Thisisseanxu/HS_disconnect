@@ -7,7 +7,7 @@ with a small set of local additions, recorded below.
 
 Without these additions the JNI symbols `TProxySetBlocked` and `TProxyIsRunning`
 referenced by
-[`TProxyBridge.java`](../java/com/example/hs_disconnect/TProxyBridge.java) would
+[`TProxyBridge.java`](../java/com/thisisseanxu/hs_disconnect/TProxyBridge.java) would
 fail to link at runtime.
 
 ## Summary of changes

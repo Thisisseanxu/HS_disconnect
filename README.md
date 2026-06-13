@@ -51,10 +51,10 @@ The whole process **involves no remote server**. All traffic stays on the device
 | Layer       | Component                                                                                                                                                           | Role                                                                                                                                                            |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | UI          | [`lib/main.dart`](lib/main.dart)                                                                                                                                    | Flutter control panel: status, permissions, duration & overlay-size sliders                                                                                     |
-| Bridge      | [`MainActivity.kt`](android/app/src/main/kotlin/com/example/hs_disconnect/MainActivity.kt)                                                                          | `MethodChannel` between Flutter and Android (`start` / `stop` / `updateSettings` / `getState` / `requestOverlay` / `requestBatteryOptimization`)                |
-| VPN core    | [`VpnBlockService.kt`](android/app/src/main/kotlin/com/example/hs_disconnect/VpnBlockService.kt)                                                                    | Extends `android.net.VpnService`, builds the TUN, manages the foreground notification & draggable overlay button                                                |
-| SOCKS proxy | [`LocalSocks5Proxy.kt`](android/app/src/main/kotlin/com/example/hs_disconnect/LocalSocks5Proxy.kt)                                                                  | Pure-Kotlin SOCKS5 server (CONNECT + UDP ASSOCIATE) bound to `127.0.0.1:10808`; tracks every active `Socket` / `DatagramSocket` so they can be closed on demand |
-| TUN ⇄ SOCKS | [`TProxyBridge.java`](android/app/src/main/java/com/example/hs_disconnect/TProxyBridge.java) + [`libhev-socks5-tunnel`](android/app/src/main/jni/hev-socks5-tunnel) | Native library (lwIP-based) that pulls IP packets off the TUN fd and re-emits them as SOCKS5 streams                                                            |
+| Bridge      | [`MainActivity.kt`](android/app/src/main/kotlin/com/thisisseanxu/hs_disconnect/MainActivity.kt)                                                                          | `MethodChannel` between Flutter and Android (`start` / `stop` / `updateSettings` / `getState` / `requestOverlay` / `requestBatteryOptimization`)                |
+| VPN core    | [`VpnBlockService.kt`](android/app/src/main/kotlin/com/thisisseanxu/hs_disconnect/VpnBlockService.kt)                                                                    | Extends `android.net.VpnService`, builds the TUN, manages the foreground notification & draggable overlay button                                                |
+| SOCKS proxy | [`LocalSocks5Proxy.kt`](android/app/src/main/kotlin/com/thisisseanxu/hs_disconnect/LocalSocks5Proxy.kt)                                                                  | Pure-Kotlin SOCKS5 server (CONNECT + UDP ASSOCIATE) bound to `127.0.0.1:10808`; tracks every active `Socket` / `DatagramSocket` so they can be closed on demand |
+| TUN ⇄ SOCKS | [`TProxyBridge.java`](android/app/src/main/java/com/thisisseanxu/hs_disconnect/TProxyBridge.java) + [`libhev-socks5-tunnel`](android/app/src/main/jni/hev-socks5-tunnel) | Native library (lwIP-based) that pulls IP packets off the TUN fd and re-emits them as SOCKS5 streams                                                            |
 
 ### The DC trick sequence
 
@@ -96,11 +96,11 @@ hs_disconnect/
    ├─ build.gradle.kts                            Hooks ndk-build into preBuild
    └─ src/main/
       ├─ AndroidManifest.xml                      VPN + overlay + FGS perms
-      ├─ kotlin/com/example/hs_disconnect/
+      ├─ kotlin/com/thisisseanxu/hs_disconnect/
       │  ├─ MainActivity.kt                       MethodChannel host
       │  ├─ VpnBlockService.kt                    VpnService + overlay
       │  └─ LocalSocks5Proxy.kt                   SOCKS5 server
-      ├─ java/com/example/hs_disconnect/
+      ├─ java/com/thisisseanxu/hs_disconnect/
       │  └─ TProxyBridge.java                     JNI binding
       ├─ jni/hev-socks5-tunnel/
       └─ jniLibs/<abi>/libhev-socks5-tunnel.so
